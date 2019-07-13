@@ -1,6 +1,6 @@
 const Nexmo = require("nexmo");
 
-module.exports.sendTexts = (req, res, next) => {
+module.exports = (req, res, next) => {
   const nexmo = new Nexmo(
     {
       apiKey: req.body.apiKey,
