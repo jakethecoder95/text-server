@@ -2,8 +2,8 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 
-const textRoutes = require("./routes/textRoutes");
-const authRoutes = require("./routes/authRoutes");
+const textRoutes = require("./routes/text");
+const authRoutes = require("./routes/auth");
 
 require("dotenv").config();
 
@@ -14,6 +14,16 @@ const MONGODB_URI = `mongodb+srv://jacob:${URI_PASSWORD}@cluster0-qmdqb.mongodb.
 
 app.use(bodyParser.json());
 
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+  );
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  next();
+});
+
 app.use(textRoutes);
 
 app.use("/auth", authRoutes);
@@ -21,9 +31,8 @@ app.use("/auth", authRoutes);
 app.use((error, req, res, next) => {
   console.log(error);
   const status = error.statusCode || 500;
-  const message = error.message;
-  const data = error.data;
-  res.status(status).json({ message: message, data: data });
+  const { message, type, value, data } = error;
+  res.status(status).json({ message, type, value, data });
 });
 
 mongoose
