@@ -13,19 +13,13 @@ module.exports = (req, res, next) => {
   const nexmoNumber = req.body.nexmoNumber;
 
   numbers.forEach(number =>
-    nexmo.message.sendSms(
-      nexmoNumber,
-      number,
-      message,
-      { type: "unicode" },
-      (err, responseData) => {
-        if (err) {
-          console.log(err);
-        } else {
-          console.dir(responseData);
-        }
+    nexmo.message.sendSms(nexmoNumber, number, message, (err, responseData) => {
+      if (err) {
+        console.log(err);
+      } else {
+        console.dir(responseData);
       }
-    )
+    })
   );
 
   res.status(200).json({ message: "success!" });

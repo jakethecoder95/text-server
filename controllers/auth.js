@@ -13,18 +13,29 @@ exports.signup = async (req, res, next) => {
     return next(error);
   }
   const { email, password, name, nexmoNumber, apiKey, secretKey } = req.body;
+  let newNexmoNumber = nexmoNumber.replace(/\D/g, "");
+  if (newNexmoNumber[0] !== "1") {
+    newNexmoNumber = "1" + newNexmoNumber;
+  }
   try {
     const hashedPsw = await bcrypt.hash(password, 12);
     const group = new Group({
       email,
       password: hashedPsw,
       name,
-      nexmoNumber,
+      nexmoNumber: newNexmoNumber,
       apiKey,
       secretKey
     });
     await group.save();
-    res.status(200).json({ message: "success", group });
+    const token = jwt.sign(
+      {
+        email: group.email,
+        groupId: group._id.toString()
+      },
+      "secret"
+    );
+    res.status(200).json({ message: "success", group, token });
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;
@@ -33,7 +44,7 @@ exports.signup = async (req, res, next) => {
   }
 };
 
-exports.login = async (req, res, next) => {
+exports.signin = async (req, res, next) => {
   const { email, password } = req.body;
   try {
     const group = await Group.findOne({ email });

@@ -31,11 +31,19 @@ router.put(
       .trim()
       .isMobilePhone()
       .not()
+      .isEmpty(),
+    body("apiKey")
+      .trim()
+      .not()
+      .isEmpty(),
+    body("secretKey")
+      .trim()
+      .not()
       .isEmpty()
   ],
   authControllers.signup
 );
 
-router.post("/login", authControllers.login);
+router.post("/login", authControllers.signin);
 
 module.exports = router;
