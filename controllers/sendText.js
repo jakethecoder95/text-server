@@ -32,21 +32,28 @@ module.exports = async (req, res, next) => {
     const numbers = req.body.people.map(person => person.number);
     const message = req.body.message;
     const nexmoNumber = req.body.nexmoNumber;
-    numbers.forEach(number =>
-      nexmo.message.sendSms(
-        nexmoNumber,
-        number,
-        message,
-        (err, responseData) => {
-          if (err) {
-            console.log(err);
-          } else {
-            console.dir(responseData);
-          }
+    for (let i = 0; i < numbers.length; i++) {
+      const number = numbers[i];
+      nexmo.message.sendSms(nexmoNumber, number, message, function(
+        err,
+        responseData
+      ) {
+        if (err) {
+          return console.log(err);
         }
-      )
-    );
-    res.status(200).json({ message: "success!" });
+        if (responseData.messages[0]["error-text"]) {
+          const errString = `Error Status: ${
+            responseData.messages[0].status
+          }. ${responseData.messages[0]["error-text"]}`;
+          const error = new Error(errString);
+          error.statusCode = 422;
+          return next(error);
+        }
+        if (i === numbers.length - 1) {
+          res.status(200).json({ message: "success!" });
+        }
+      });
+    }
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;
