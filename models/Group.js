@@ -29,7 +29,8 @@ const groupSchema = new Schema({
   people: [
     {
       type: Schema.Types.ObjectId,
-      ref: "User"
+      ref: "Person",
+      required: true
     }
   ]
 });

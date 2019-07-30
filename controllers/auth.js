@@ -1,8 +1,10 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { validationResult } = require("express-validator/check");
+const _ = require("lodash");
 
 const Group = require("../models/Group");
+require("../models/Person");
 
 exports.signup = async (req, res, next) => {
   const errors = validationResult(req);
@@ -26,7 +28,7 @@ exports.signup = async (req, res, next) => {
       nexmoNumber: newNexmoNumber,
       apiKey,
       secretKey
-    });
+    }).populate("people");
     await group.save();
     const token = jwt.sign(
       {
@@ -35,7 +37,9 @@ exports.signup = async (req, res, next) => {
       },
       "secret"
     );
-    res.status(200).json({ message: "success", group, token });
+    res
+      .status(200)
+      .json({ message: "success", group: _.omit(group, "password"), token });
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;
@@ -47,7 +51,7 @@ exports.signup = async (req, res, next) => {
 exports.signin = async (req, res, next) => {
   const { email, password } = req.body;
   try {
-    const group = await Group.findOne({ email });
+    const group = await Group.findOne({ email }).populate("people");
     // Throw error if no group is found with given email
     if (!group) {
       const error = new Error("No group could be found by that email address");
@@ -72,9 +76,28 @@ exports.signin = async (req, res, next) => {
       },
       "secret"
     );
-    res
-      .status(200)
-      .json({ message: "Login Successfull!", group: { ...group._doc }, token });
+    res.status(200).json({
+      message: "Login Successfull!",
+      group: _.omit(group._doc, "password"),
+      token
+    });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};
+
+exports.initGroup = async (req, res, next) => {
+  try {
+    const group = await Group.findById(req.groupId).populate("people");
+    if (!group) {
+      const error = new Error("Group was not found by that");
+      error.statusCode = 401;
+      throw error;
+    }
+    res.status(200).json({ group: _.omit(group._doc, "password") });
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;

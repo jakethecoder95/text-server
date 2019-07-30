@@ -3,6 +3,7 @@ const { body } = require("express-validator/check");
 
 const Group = require("../models/Group");
 const authControllers = require("../controllers/auth");
+const isAuth = require("../middleware/is-auth");
 
 const router = express.Router();
 
@@ -45,5 +46,7 @@ router.put(
 );
 
 router.post("/login", authControllers.signin);
+
+router.get("/init-group", isAuth, authControllers.initGroup);
 
 module.exports = router;
