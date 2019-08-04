@@ -7,14 +7,14 @@ exports.addPerson = async (req, res, next) => {
   const { name, number } = req.body;
   const groupId = req.groupId;
   try {
-    const group = await Group.findById(groupId);
+    const group = await Group.findById(groupId).populate("people");
     if (!group) {
       const error = new Error("No Group found");
       error.statusCode = 401;
       throw error;
     }
     const person = new Person({ name, number });
-    group.people.push(person._id);
+    group.people.push(person);
     await person.save();
     await group.save();
     res
@@ -32,7 +32,7 @@ exports.deletePerson = async (req, res, next) => {
   const personId = req.body.personId;
   const groupId = req.groupId;
   try {
-    const group = await Group.findById(groupId);
+    const group = await Group.findById(groupId).populate("people");
     if (!group) {
       const error = new Error("No Group found");
       error.statusCode = 401;
