@@ -1,3 +1,5 @@
+const _ = require("lodash");
+
 const Person = require("../models/Person");
 const Group = require("../models/Group");
 
@@ -15,7 +17,9 @@ exports.addPerson = async (req, res, next) => {
     group.people.push(person._id);
     await person.save();
     await group.save();
-    res.status(200).json({ message: "Success", group });
+    res
+      .status(200)
+      .json({ message: "Success", group: _.omit(group, "password") });
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;
@@ -37,7 +41,9 @@ exports.deletePerson = async (req, res, next) => {
     group.people = group.people.filter(per => per._id.toString() !== personId);
     await Person.findByIdAndDelete(personId);
     await group.save();
-    res.status(200).json({ messgae: "Success", group });
+    res
+      .status(200)
+      .json({ messgae: "Success", group: _.omit(group, "password") });
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;
