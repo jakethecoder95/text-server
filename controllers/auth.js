@@ -1,10 +1,13 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { validationResult } = require("express-validator/check");
+const dotenv = require("dotenv");
 const _ = require("lodash");
 
 const Group = require("../models/Group");
 require("../models/Person");
+
+dotenv.config();
 
 exports.signup = async (req, res, next) => {
   const errors = validationResult(req);
@@ -15,7 +18,7 @@ exports.signup = async (req, res, next) => {
     return next(error);
   }
   const { email, password, name, nexmoNumber, apiKey, secretKey } = req.body;
-  let newNexmoNumber = nexmoNumber.replace(/\D/g, "");
+  const newNexmoNumber = nexmoNumber.replace(/\D/g, "");
   if (newNexmoNumber[0] !== "1") {
     newNexmoNumber = "1" + newNexmoNumber;
   }
@@ -28,14 +31,14 @@ exports.signup = async (req, res, next) => {
       nexmoNumber: newNexmoNumber,
       apiKey,
       secretKey
-    }).populate("people");
+    });
     await group.save();
     const token = jwt.sign(
       {
         email: group.email,
         groupId: group._id.toString()
       },
-      "secret"
+      process.env.JWT_SECRET
     );
     res
       .status(200)

@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 
 const textRoutes = require("./routes/text");
 const authRoutes = require("./routes/auth");
+const manageRoutes = require("./routes/manage");
 
 require("dotenv").config();
 
@@ -27,6 +28,8 @@ app.use((req, res, next) => {
 app.use(textRoutes);
 
 app.use("/auth", authRoutes);
+
+app.use("/manage", manageRoutes);
 
 app.use((error, req, res, next) => {
   console.log(error);
