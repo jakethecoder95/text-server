@@ -13,7 +13,18 @@ exports.addPerson = async (req, res, next) => {
       error.statusCode = 401;
       throw error;
     }
-    const person = new Person({ name, number });
+    let person = Person.findOne({ number: number });
+    if (person) {
+      const personInGroup = group.people.find(
+        person => person.number === number
+      );
+      if (personInGroup) {
+        const error = new Error("Number already exists in your group");
+        error.statusCode = 401;
+        throw error;
+      }
+    }
+    person = new Person({ name, number });
     group.people.push(person);
     await person.save();
     await group.save();
