@@ -9,4 +9,10 @@ router.put("/add-person", isAuth, manageControllers.addPerson);
 
 router.delete("/delete-person", isAuth, manageControllers.deletePerson);
 
+router.post(
+  "/update-personal-settings",
+  isAuth,
+  manageControllers.updatePersonalSettings
+);
+
 module.exports = router;

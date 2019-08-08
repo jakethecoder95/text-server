@@ -1,3 +1,4 @@
+const bcrypt = require("bcryptjs");
 const _ = require("lodash");
 
 const Person = require("../models/Person");
@@ -55,6 +56,45 @@ exports.deletePerson = async (req, res, next) => {
     res
       .status(200)
       .json({ messgae: "Success", group: _.omit(group, "password") });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};
+
+exports.updatePersonalSettings = async (req, res, next) => {
+  const { email, name, oldPassword, newPassword, confirmPassword } = req.body;
+  try {
+    const group = await Group.findById(req.groupId).populate("people");
+    if (!group) {
+      const error = new Error("Group was not found");
+      error.statusCode = 401;
+      throw error;
+    }
+    group.name = group.name !== name ? name : group.name;
+    group.email = group.email !== email ? email : group.email;
+    if (oldPassword) {
+      if (newPassword !== confirmPassword) {
+        const error = new Error("Does not match");
+        error.status = 422;
+        error.type = "confirmPassword";
+        error.value = confirmPassword;
+        throw error;
+      }
+      const matches = await bcrypt.compare(oldPassword, group.password);
+      if (!matches) {
+        const error = new Error("Incorrect Password");
+        error.statusCode = 422;
+        error.type = "oldPassword";
+        error.value = oldPassword;
+        throw error;
+      }
+      group.password = await bcrypt.hash(newPassword, 12);
+    }
+    group.save();
+    res.status(200).json({ message: "Success", group });
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;
