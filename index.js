@@ -6,7 +6,7 @@ const textRoutes = require("./routes/text");
 const authRoutes = require("./routes/auth");
 const manageRoutes = require("./routes/manage");
 
-require("dotenv").config();
+if (process.env.NODE_ENV !== "production") require("dotenv").config();
 
 const app = express();
 

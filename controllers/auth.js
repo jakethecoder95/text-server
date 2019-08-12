@@ -1,13 +1,12 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { validationResult } = require("express-validator/check");
-const dotenv = require("dotenv");
 const _ = require("lodash");
 
 const Group = require("../models/Group");
 require("../models/Person");
 
-dotenv.config();
+if (process.env.NODE_ENV !== "production") require("dotenv").config();
 
 exports.signup = async (req, res, next) => {
   const errors = validationResult(req);
