@@ -1,4 +1,5 @@
 const bcrypt = require("bcryptjs");
+const { validationResult } = require("express-validator/check");
 const _ = require("lodash");
 
 const Person = require("../models/Person");
@@ -65,6 +66,13 @@ exports.deletePerson = async (req, res, next) => {
 };
 
 exports.updatePersonalSettings = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    const error = new Error("Validation failed.");
+    error.statusCode = 422;
+    error.data = errors.array();
+    return next(error);
+  }
   const { email, name, oldPassword, newPassword, confirmPassword } = req.body;
   try {
     const group = await Group.findById(req.groupId).populate("people");
@@ -94,7 +102,42 @@ exports.updatePersonalSettings = async (req, res, next) => {
       group.password = await bcrypt.hash(newPassword, 12);
     }
     group.save();
-    res.status(200).json({ message: "Success", group });
+    res
+      .status(200)
+      .json({ message: "Success", group: _.omit(group, "password") });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};
+
+exports.updateNexmoSettings = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    const error = new Error("Validation failed.");
+    error.statusCode = 422;
+    error.data = errors.array();
+    return next(error);
+  }
+  const { nexmoNumber, apiKey, secretKey } = req.body;
+  try {
+    const group = await Group.findById(req.groupId).populate("people");
+    if (!group) {
+      const error = new Error("Group was not found");
+      error.statusCode = 401;
+      throw error;
+    }
+    group.nexmoNumber =
+      group.nexmoNumber !== nexmoNumber ? nexmoNumber : group.apiKey;
+    group.secretKey =
+      group.secretKey !== secretKey ? secretKey : group.secretKey;
+    group.apiKey = group.apiKey !== apiKey ? apiKey : group.apiKey;
+    await group.save();
+    res
+      .status(200)
+      .json({ message: "Success", group: _.omit(group, "password") });
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;

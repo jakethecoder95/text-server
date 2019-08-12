@@ -1,4 +1,5 @@
 const express = require("express");
+const { body } = require("express-validator/check");
 
 const isAuth = require("../middleware/is-auth");
 const manageControllers = require("../controllers/manage");
@@ -12,7 +13,38 @@ router.delete("/delete-person", isAuth, manageControllers.deletePerson);
 router.post(
   "/update-personal-settings",
   isAuth,
+  [
+    body("email")
+      .isEmail()
+      .withMessage("Please enter a valid email.")
+      .normalizeEmail(),
+    body("name")
+      .trim()
+      .not()
+      .isEmpty()
+  ],
   manageControllers.updatePersonalSettings
+);
+
+router.post(
+  "/update-nexmo-settings",
+  isAuth,
+  [
+    body("nexmoNumber")
+      .trim()
+      .isMobilePhone()
+      .not()
+      .isEmpty(),
+    body("apiKey")
+      .trim()
+      .not()
+      .isEmpty(),
+    body("secretKey")
+      .trim()
+      .not()
+      .isEmpty()
+  ],
+  manageControllers.updateNexmoSettings
 );
 
 module.exports = router;
