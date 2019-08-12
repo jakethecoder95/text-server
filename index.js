@@ -12,7 +12,7 @@ const app = express();
 
 const URI_PASSWORD = process.env.URI_PASSWORD;
 const MONGODB_URI = `mongodb+srv://jacob:${URI_PASSWORD}@cluster0-qmdqb.mongodb.net/text`;
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT;
 
 app.use(bodyParser.json());
 
