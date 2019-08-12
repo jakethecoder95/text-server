@@ -12,6 +12,7 @@ const app = express();
 
 const URI_PASSWORD = process.env.URI_PASSWORD;
 const MONGODB_URI = `mongodb+srv://jacob:${URI_PASSWORD}@cluster0-qmdqb.mongodb.net/text`;
+const PORT = process.env.PORT || 5000;
 
 app.use(bodyParser.json());
 
@@ -41,7 +42,7 @@ app.use((error, req, res, next) => {
 mongoose
   .connect(MONGODB_URI)
   .then(result => {
-    app.listen(5000, () => console.log("App has started"));
+    app.listen(PORT, () => console.log("App has started"));
   })
   .catch(err => {
     console.log(err);
