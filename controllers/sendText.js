@@ -2,6 +2,7 @@ const Nexmo = require("nexmo");
 const bcrypt = require("bcryptjs");
 
 const Group = require("../models/Group");
+const sleep = require("../util/sleep");
 
 module.exports = async (req, res, next) => {
   const password = req.body.password;
@@ -33,6 +34,10 @@ module.exports = async (req, res, next) => {
     const failedTxts = [];
     for (let i = 0; i < people.length; i++) {
       const { number, name } = people[i];
+      // Throttleing the api calls
+      if (i % 30 === 0) {
+        await sleep(1000);
+      }
       nexmo.message.sendSms(nexmoNumber, number, message, function(
         err,
         responseData
