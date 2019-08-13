@@ -32,7 +32,7 @@ exports.addPerson = async (req, res, next) => {
     await group.save();
     res
       .status(200)
-      .json({ message: "Success", group: _.omit(group, "password") });
+      .json({ message: "Success", group: _.omit(group._doc, "password") });
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;
@@ -56,7 +56,7 @@ exports.deletePerson = async (req, res, next) => {
     await group.save();
     res
       .status(200)
-      .json({ messgae: "Success", group: _.omit(group, "password") });
+      .json({ messgae: "Success", group: _.omit(group._doc, "password") });
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;
@@ -104,7 +104,7 @@ exports.updatePersonalSettings = async (req, res, next) => {
     group.save();
     res
       .status(200)
-      .json({ message: "Success", group: _.omit(group, "password") });
+      .json({ message: "Success", group: _.omit(group._doc, "password") });
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;
@@ -137,7 +137,7 @@ exports.updateNexmoSettings = async (req, res, next) => {
     await group.save();
     res
       .status(200)
-      .json({ message: "Success", group: _.omit(group, "password") });
+      .json({ message: "Success", group: _.omit(group._doc, "password") });
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;

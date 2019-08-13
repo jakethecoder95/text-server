@@ -29,28 +29,25 @@ module.exports = async (req, res, next) => {
       },
       { debug: true }
     );
-    const numbers = req.body.people.map(person => person.number);
-    const message = req.body.message;
-    const nexmoNumber = req.body.nexmoNumber;
-    for (let i = 0; i < numbers.length; i++) {
-      const number = numbers[i];
+    const { people, message, nexmoNumber } = req.body;
+    const failedTxts = [];
+    for (let i = 0; i < people.length; i++) {
+      const { number, name } = people[i];
       nexmo.message.sendSms(nexmoNumber, number, message, function(
         err,
         responseData
       ) {
         if (err) {
-          return console.log(err);
+          console.log(err);
         }
         if (responseData.messages[0]["error-text"]) {
           const errString = `Error Status: ${
             responseData.messages[0].status
           }. ${responseData.messages[0]["error-text"]}`;
-          const error = new Error(errString);
-          error.statusCode = 422;
-          return next(error);
+          failedTxts.push({ name, number, message: errString });
         }
-        if (i === numbers.length - 1) {
-          res.status(200).json({ message: "success!" });
+        if (i === people.length - 1) {
+          res.status(200).json({ message: "success!", failedTxts });
         }
       });
     }
