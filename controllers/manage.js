@@ -8,6 +8,7 @@ const Group = require("../models/Group");
 exports.addPerson = async (req, res, next) => {
   let { name, number } = req.body;
   const groupId = req.groupId;
+  number = number.replace(/\D/g, "");
   if (number.length === 10) {
     number = "1" + number;
   }
