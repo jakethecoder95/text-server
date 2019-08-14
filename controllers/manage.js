@@ -6,8 +6,11 @@ const Person = require("../models/Person");
 const Group = require("../models/Group");
 
 exports.addPerson = async (req, res, next) => {
-  const { name, number } = req.body;
+  let { name, number } = req.body;
   const groupId = req.groupId;
+  if (number.length === 10) {
+    number = "1" + number;
+  }
   try {
     const group = await Group.findById(groupId).populate("people");
     if (!group) {
