@@ -76,7 +76,7 @@ exports.signin = async (req, res, next) => {
         email: group.email,
         groupId: group._id.toString()
       },
-      "secret"
+      process.env.JWT_SECRET
     );
     res.status(200).json({
       message: "Login Successfull!",
