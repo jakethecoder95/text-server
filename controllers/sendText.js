@@ -35,7 +35,7 @@ module.exports = async (req, res, next) => {
     for (let i = 0; i < people.length; i++) {
       const { number, name } = people[i];
       // Throttleing the api calls
-      await sleep(1100);
+      await sleep(1500);
       nexmo.message.sendSms(nexmoNumber, number, message, function(
         err,
         responseData
