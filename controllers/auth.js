@@ -31,7 +31,6 @@ exports.signup = async (req, res, next) => {
       apiKey,
       secretKey
     });
-    await group.save();
     const token = jwt.sign(
       {
         email: group.email,
@@ -39,6 +38,7 @@ exports.signup = async (req, res, next) => {
       },
       process.env.JWT_SECRET
     );
+    await group.save();
     res
       .status(200)
       .json({ message: "success", group: _.omit(group, "password"), token });
