@@ -2,7 +2,7 @@ const Nexmo = require("nexmo");
 
 const Person = require("../models/Person");
 const Group = require("../models/Group");
-const sentSingleText = require("../util/send-single-text");
+const sendSingleText = require("../util/send-single-text");
 
 module.exports = async (req, res, next) => {
   const params = Object.assign(req.query, req.body);
