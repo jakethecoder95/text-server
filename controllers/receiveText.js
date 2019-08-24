@@ -5,10 +5,11 @@ const Group = require("../models/Group");
 const sendSingleText = require("../util/send-single-text");
 
 module.exports = async (req, res, next) => {
-  const params = Object.assign(req.query, req.body);
-  const groupNum = params.to;
-  const fromNum = params.msisdn;
-  const messageArr = params.text.trim().split(" ");
+  const params = Object.assign(req.query, req.body),
+    groupNum = params.to,
+    fromNum = params.msisdn,
+    messageArr = params.text.trim().split(" ");
+  let responseMessage;
 
   try {
     const group = await Group.findOne({ nexmoNumber: groupNum }).populate(
@@ -20,22 +21,25 @@ module.exports = async (req, res, next) => {
       throw error;
     }
     let person = await Person.findOne({ number: fromNum });
-    if (messageArr[0] === "1" && !person) {
+    if (messageArr[0] === "1") {
       // Add number
       let name;
       if (messageArr.length >= 2) {
         messageArr.shift();
+        messageArr.slice(0, 2);
         name = messageArr.join(" ");
       } else {
         name = "Unknown";
       }
-      person = new Person({ name, number: fromNum });
-      group.people.push(person);
+      if (person) {
+        person.name = name;
+      } else {
+        person = new Person({ name, number: fromNum });
+        group.people.push(person);
+        responseMessage = `Welcome to ${group.name} GroupText! Text 2 at any time to leave the group. [No reply]`;
+        sendSingleText(group, fromNum, responseMessage);
+      }
       await person.save();
-      const joinedGroupMessage = `Welcome to ${
-        group.name
-      } GroupText! Text 2 at any time to leave the group. [No reply]`;
-      sendSingleText(group, fromNum, joinedGroupMessage);
     }
     if (messageArr[0] === "2" && person) {
       // Remove number
@@ -43,10 +47,8 @@ module.exports = async (req, res, next) => {
         per => per._id.toString() !== person._id.toString()
       );
       await Person.deleteOne(person);
-      const leftGroupMessage = `You successfully left ${
-        group.name
-      } GroupText! Text 1 and your name at any time to join again. [No reply]`;
-      sendSingleText(group, fromNum, leftGroupMessage);
+      responseMessage = `You successfully left ${group.name} GroupText! Text 1 and your name at any time to join again. [No reply]`;
+      sendSingleText(group, fromNum, responseMessage);
     }
     await group.save();
     res.status(200).send();
