@@ -16,10 +16,10 @@ exports.signup = async (req, res, next) => {
     error.data = errors.array();
     return next(error);
   }
-  const { email, password, name, nexmoNumber, apiKey, secretKey } = req.body;
-  const newNexmoNumber = nexmoNumber.replace(/\D/g, "");
-  if (newNexmoNumber[0] !== "1") {
-    newNexmoNumber = "1" + newNexmoNumber;
+  const { email, password, name, phoneNumber } = req.body;
+  const newPhoneNumber = phoneNumber.replace(/\D/g, "");
+  if (newPhoneNumber[0] !== "1") {
+    newPhoneNumber = "1" + newPhoneNumber;
   }
   try {
     const hashedPsw = await bcrypt.hash(password, 12);
@@ -27,9 +27,7 @@ exports.signup = async (req, res, next) => {
       email,
       password: hashedPsw,
       name,
-      nexmoNumber: newNexmoNumber,
-      apiKey,
-      secretKey
+      phoneNumber: newPhoneNumber
     });
     const token = jwt.sign(
       {

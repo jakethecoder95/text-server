@@ -2,34 +2,43 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
 const groupSchema = new Schema({
-  email: {
-    type: String,
+  userId: {
+    type: Schema.Types.ObjectId,
     require: true
   },
-  password: {
-    type: String,
-    require: true
+  activated: {
+    type: Boolean,
+    require: true,
+    default: false
+  },
+  crossroadsAccount: {
+    type: Boolean,
+    require: true,
+    default: false
   },
   name: {
     type: String,
     required: true
   },
-  nexmoNumber: {
-    type: String,
-    required: true
-  },
-  apiKey: {
-    type: String,
-    require: true
-  },
-  secretKey: {
-    type: String,
-    require: true
-  },
+  number: String,
   people: [
     {
       type: Schema.Types.ObjectId,
       ref: "Person",
+      required: true
+    }
+  ],
+  bucket: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Budget",
+      required: true
+    }
+  ],
+  admins: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "User",
       required: true
     }
   ]

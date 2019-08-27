@@ -21,23 +21,15 @@ router.put(
         });
       })
       .normalizeEmail(),
-    body("password")
-      .trim()
-      .isLength({ min: 6 }),
-    body("name")
-      .trim()
-      .not()
-      .isEmpty(),
-    body("nexmoNumber")
+    body("phoneNumber")
       .trim()
       .isMobilePhone()
       .not()
       .isEmpty(),
-    body("apiKey")
+    body("password")
       .trim()
-      .not()
-      .isEmpty(),
-    body("secretKey")
+      .isLength({ min: 6 }),
+    body("name")
       .trim()
       .not()
       .isEmpty()
