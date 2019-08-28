@@ -11,7 +11,7 @@ const groupSchema = new Schema({
     require: true,
     default: false
   },
-  crossroadsAccount: {
+  crossroadsGroup: {
     type: Boolean,
     require: true,
     default: false
@@ -28,13 +28,11 @@ const groupSchema = new Schema({
       required: true
     }
   ],
-  bucket: [
-    {
-      type: Schema.Types.ObjectId,
-      ref: "Budget",
-      required: true
-    }
-  ],
+  bucket: {
+    type: Schema.Types.ObjectId,
+    ref: "Bucket",
+    required: true
+  },
   admins: [
     {
       type: Schema.Types.ObjectId,

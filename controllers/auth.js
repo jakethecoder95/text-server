@@ -6,6 +6,7 @@ const _ = require("lodash");
 
 const Group = require("../models/Group");
 const User = require("../models/User");
+const Bucket = require("../models/Bucket");
 require("../models/Person");
 
 if (process.env.NODE_ENV !== "production") require("dotenv").config();
@@ -31,6 +32,7 @@ exports.signup = async (req, res, next) => {
       name,
       phoneNumber: newPhoneNumber
     });
+    const bucket = new Bucket({ userId: user._id, name: user.name });
     const token = jwt.sign(
       {
         email: user.email,
@@ -38,13 +40,12 @@ exports.signup = async (req, res, next) => {
       },
       process.env.JWT_SECRET
     );
+    await bucket.save();
     await user.save();
-    res.status(200).json({
-      message: "success",
-      user: _.omit(user, "password"),
-      groups: [],
-      token
-    });
+    req.bucket = bucket;
+    req.token = token;
+    req.userId = user._id;
+    next();
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;
@@ -55,7 +56,6 @@ exports.signup = async (req, res, next) => {
 
 exports.signin = async (req, res, next) => {
   const { email, password } = req.body;
-  let groups = [];
   try {
     const user = await User.findOne({ email }).populate("people");
     // Throw error if no user is found with given email
@@ -75,14 +75,6 @@ exports.signin = async (req, res, next) => {
       error.value = password;
       throw error;
     }
-    groups.push(
-      ...(await Group.find({
-        userId: user._id
-      }))
-    );
-    groups.push(
-      ...(await Group.find({ admins: mongoose.Types.ObjectId(user._id) }))
-    );
     const token = jwt.sign(
       {
         email: user.email,
@@ -90,12 +82,9 @@ exports.signin = async (req, res, next) => {
       },
       process.env.JWT_SECRET
     );
-    res.status(200).json({
-      message: "Login Successfull!",
-      user: _.omit(user._doc, "password"),
-      groups,
-      token
-    });
+    req.userId = user._id.toString();
+    req.token = token;
+    next();
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;
@@ -106,6 +95,8 @@ exports.signin = async (req, res, next) => {
 
 exports.initUser = async (req, res, next) => {
   const groups = [];
+  const token = req.token; // Only on signup/login
+  const bucket = req.bucket; // Only on signup
   try {
     const user = await User.findById(req.userId).populate("people");
     if (!user) {
@@ -113,16 +104,23 @@ exports.initUser = async (req, res, next) => {
       error.statusCode = 401;
       throw error;
     }
-    groups.push(
-      ...(await Group.find({
+    const ownedGroups = await Group.find(
+      {
         userId: user._id
-      }))
+      },
+      "_id name"
     );
-    groups.push(
-      ...(await Group.find({ admins: mongoose.Types.ObjectId(user._id) }))
+    const adminGroups = await Group.find(
+      {
+        admins: mongoose.Types.ObjectId(user._id)
+      },
+      "_id name"
     );
-    console.log(groups);
-    res.status(200).json({ user: _.omit(user._doc, "password"), groups });
+    groups.push(...ownedGroups);
+    groups.push(...adminGroups);
+    res
+      .status(200)
+      .json({ user: _.omit(user._doc, "password"), groups, token, bucket });
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;

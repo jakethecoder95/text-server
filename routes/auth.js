@@ -34,10 +34,11 @@ router.put(
       .not()
       .isEmpty()
   ],
-  authControllers.signup
+  authControllers.signup,
+  authControllers.initUser
 );
 
-router.post("/login", authControllers.signin);
+router.post("/login", authControllers.signin, authControllers.initUser);
 
 router.get("/init-user", isAuth, authControllers.initUser);
 

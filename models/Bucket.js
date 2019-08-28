@@ -1,14 +1,9 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-const appDataSchema = new Schema({
+const bucketSchema = new Schema({
   name: {
     type: String,
-    required: true
-  },
-  groupId: {
-    type: Schema.Types.ObjectId,
-    ref: "Group",
     required: true
   },
   userId: {
@@ -23,4 +18,4 @@ const appDataSchema = new Schema({
   }
 });
 
-module.exports = mongoose.model("AppData", appDataSchema);
+module.exports = mongoose.model("Bucket", bucketSchema);
