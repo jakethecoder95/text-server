@@ -17,6 +17,11 @@ const userSchema = new Schema({
   phoneNumber: {
     type: String,
     required: true
+  },
+  bucket: {
+    type: Number,
+    required: true,
+    default: 0
   }
 });
 
