@@ -2,7 +2,7 @@ const Bucket = require("../models/Bucket");
 
 exports.fetchBucket = async (req, res, next) => {
   try {
-    const bucket = await Bucket.find({ userId: req.userId });
+    const bucket = await Bucket.findOne({ userId: req.userId });
     if (!bucket) {
       const error = new Error("No bucket found with userId given: " + userId);
       error.statusCode = 403;
