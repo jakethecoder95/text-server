@@ -7,4 +7,6 @@ const router = express.Router();
 
 router.get("/fetch-group", isAuth, groupControllers.fetchGroup);
 
+router.get("/fetch-numbers-list", isAuth, groupControllers.fetchNumberList);
+
 module.exports = router;
