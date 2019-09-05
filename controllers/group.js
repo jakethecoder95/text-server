@@ -15,13 +15,15 @@ exports.fetchGroup = async (req, res, next) => {
   const userId = req.userId,
     groupId = req.query.groupId;
   try {
-    const group = await Group.findById(groupId).populate("bucket");
+    const group = await Group.findById(groupId)
+      .populate("bucket")
+      .populate("people");
     if (!group) {
       const error = new Error("No Group found!");
       error.statusCode = 401;
       throw error;
     }
-    const isGroupOwner = userId === groupId;
+    const isGroupOwner = userId === group.userId.toString();
     const isGroupAdmin = group.admins.find(
       adminId => adminId.toString() === userId
     );

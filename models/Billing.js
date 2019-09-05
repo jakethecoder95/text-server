@@ -16,7 +16,13 @@ const billingSchema = new Schema({
       amt: {
         type: Number,
         required: true
-      }
+      },
+      sids: [
+        {
+          type: String,
+          required: true
+        }
+      ]
     }
   ],
   received: [
@@ -27,6 +33,10 @@ const billingSchema = new Schema({
       },
       amt: {
         type: Number,
+        required: true
+      },
+      sid: {
+        type: String,
         required: true
       }
     }

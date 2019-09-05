@@ -11,16 +11,31 @@ const groupSchema = new Schema({
     require: true,
     default: false
   },
-  crossroadsGroup: {
-    type: Boolean,
-    require: true,
-    default: false
+  payment: {
+    plan: {
+      type: String,
+      required: true,
+      default: "standard"
+    },
+    smsPrice: {
+      type: Number,
+      required: true,
+      default: 0.025
+    },
+    numberPrice: {
+      type: Number,
+      required: true,
+      default: 2
+    }
   },
   name: {
     type: String,
     required: true
   },
-  number: String,
+  number: {
+    type: String,
+    required: true
+  },
   people: [
     {
       type: Schema.Types.ObjectId,
@@ -28,7 +43,7 @@ const groupSchema = new Schema({
       required: true
     }
   ],
-  bucket: {
+  bucketId: {
     type: Schema.Types.ObjectId,
     ref: "Bucket",
     required: true
