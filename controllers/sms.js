@@ -44,9 +44,9 @@ exports.sendGroupSms = async (req, res, next) => {
       error.statusCode = 403;
       throw error;
     }
-    const smsPerMessageCnt = Math.floor(people.length / 160) + 1;
+    const smsPerMessageCnt = Math.floor(message.length / 160) + 1;
     const totalPrice =
-      group.payment.textPrice * smsPerMessageCnt * people.length;
+      group.payment.smsPrice * smsPerMessageCnt * people.length;
     if (bucket.amount < totalPrice) {
       const error = new Error("Not enough money in bucket");
       error.statusCode = 403;
@@ -92,23 +92,39 @@ exports.sendGroupSms = async (req, res, next) => {
 };
 
 exports.recieveSms = async (req, res, next) => {
-  const twiml = new MessagingResponse(),
-    { Body, From, To } = req.body,
+  const { Body, From, To, SID } = req.body,
     messageArr = Body.trim()
       .replace("\n", " ")
       .split(" "),
     from = From.replace("+", ""),
-    to = To.replace("+", "");
+    to = To.replace("+", ""),
+    date = new Date().toISOString(),
+    sentMessageSIDs = [];
 
-  let responseMessage;
+  let responseMessage,
+    totalPrice = 0;
   try {
     // Find group
     const group = await Group.findOne({ number: to }).populate("people");
     if (!group) {
+      console.log("there is no group");
       const error = new Error("No group was found");
-      error.statusCode(401);
+      error.statusCode = 401;
       throw error;
     }
+
+    // Find Bucket and deduce recieving price
+    const bucket = await Bucket.findById(group.bucketId);
+    bucket.amount -= group.payment.smsPrice;
+    await bucket.save();
+
+    // Get Billing
+    const billing = await Billing.findOne({ groupId: group._id });
+    billing.recieved.push({
+      date,
+      amount: group.payment.smsPrice,
+      sid: SID
+    });
 
     // Initialize person and check for number in group people list
     let person;
@@ -149,16 +165,68 @@ exports.recieveSms = async (req, res, next) => {
       responseMessage = `You successfully left ${group.name} GroupText! Text 1 and your name at any time to join again. [No reply]`;
     }
 
-    // Send group text if group messages starts with "SEND" number is group owner or admin
+    // Send group text if group message starts with "SEND"
+    if (messageArr[0] === "SEND") {
+      await group.populate("owner");
+      let numberAuthorized = false;
+      // Check if number is from group owner
+      if (from === group.owner.phoneNumber) {
+        numberAuthorized = true;
+      } else {
+        // Check if number is from group admin
+        await group.populate("admins");
+        const admin = group.admins.find(admin => admin.phoneNumber);
+        if (admin) {
+          numberAuthorized = true;
+        }
+      }
+      if (!numberAuthorized) {
+        const error = new Error("Number not authorized to send");
+        error.statusCode = 403;
+        throw error;
+      }
+      // Get message
+      const { people, payment } = group;
+      messageArr.shift();
+      messageArr.slice(0, 2);
+      message = messageArr.join(" ").trim();
+      // Check to make sure there is enough in group bucket to complete the transaction
+      const smsPerMessageCnt = Math.floor(message.length / 160) + 1;
+      totalPrice += payment.textPrice * smsPerMessageCnt * people.length;
+      if (bucket.amount < totalPrice) {
+        const error = new Error("Not enough money in bucket");
+        error.statusCode = 403;
+        throw error;
+      }
 
-    // Remove price from bucket
+      // All clear to send to number list
+      for (let person of people) {
+        const { number } = person;
+        const response = await sendSms(group.number, number, message);
+        sentMessageSIDs.push(response.sid);
+        console.log(response);
+      }
+      responseMessage = "Your messages were sent!";
+    }
 
-    // Add to Group bill
+    // Send responseMessage
+    if (responseMessage) {
+      const response = await sendSms(group.number, from, responseMessage);
+      sentMessageSIDs.push(response.sid);
+      totalPrice += group.payment.smsPrice;
+      bucket.amount -= totalPrice;
+      // Add to Group bill for sent message(s)
+      billing.sent.push({
+        date,
+        amount: totalPrice,
+        sids: sentMessageSIDs
+      });
+    }
 
     await group.save();
-    twiml.message(responseMessage);
-    res.writeHead(200, { "Content-Type": "text/xml" });
-    res.end(twiml.toString());
+    await bucket.save();
+    await billing.save();
+    res.status(200).json({ message: responseMessage, number: from });
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;
