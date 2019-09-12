@@ -101,7 +101,7 @@ exports.createGroup = async (req, res, next) => {
     await sendSms(
       "+19165874838",
       user.phoneNumber,
-      "Welcome! Your first text from your new Number"
+      "Welcome! Your first text from your new group"
     );
   } catch (err) {
     if (!err.statusCode) {
