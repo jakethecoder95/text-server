@@ -8,6 +8,7 @@ const manageRoutes = require("./routes/manage");
 const groupRoutes = require("./routes/group");
 const userRoutes = require("./routes/user");
 const smsRoutes = require("./routes/sms");
+const bucketRoutes = require("./routes/bucket");
 
 if (process.env.NODE_ENV !== "production") require("dotenv").config();
 
@@ -41,6 +42,8 @@ app.use("/group", groupRoutes);
 app.use("/user", userRoutes);
 
 app.use("/sms", smsRoutes);
+
+app.use("/bucket", bucketRoutes);
 
 app.use((error, req, res, next) => {
   console.log(error);
