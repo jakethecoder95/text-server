@@ -5,6 +5,8 @@ const isAuth = require("../middleware/is-auth");
 
 const router = express.Router();
 
+router.post("/create-group", isAuth, groupControllers.createGroup);
+
 router.get("/fetch-group", isAuth, groupControllers.fetchGroup);
 
 router.get("/fetch-numbers-list", isAuth, groupControllers.fetchNumberList);

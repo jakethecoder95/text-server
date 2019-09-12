@@ -9,23 +9,20 @@ const groupSchema = new Schema({
   activated: {
     type: Boolean,
     require: true,
-    default: false
+    default: true
   },
-  payment: {
-    plan: {
+  stripe: {
+    customerId: {
       type: String,
-      required: true,
-      default: "standard"
+      required: true
     },
-    smsPrice: {
-      type: Number,
-      required: true,
-      default: 0.025
+    subscriptionId: {
+      type: String,
+      required: true
     },
-    numberPrice: {
-      type: Number,
-      required: true,
-      default: 2
+    planId: {
+      type: String,
+      required: true
     }
   },
   name: {
@@ -43,18 +40,37 @@ const groupSchema = new Schema({
       required: true
     }
   ],
-  bucketId: {
-    type: Schema.Types.ObjectId,
-    ref: "Bucket",
-    required: true
-  },
   admins: [
     {
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true
     }
-  ]
+  ],
+  currentBillingPeriod: {
+    start: {
+      type: Number,
+      required: true
+    },
+    end: {
+      type: Number,
+      required: true
+    }
+  },
+  monthlySms: {
+    limit: {
+      type: Number,
+      require: true
+    },
+    pay: {
+      type: Number,
+      required: true
+    },
+    count: {
+      type: Number,
+      require: true
+    }
+  }
 });
 
 module.exports = mongoose.model("Group", groupSchema);
