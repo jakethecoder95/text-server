@@ -26,7 +26,6 @@ exports.createGroup = async (req, res, next) => {
     smsLimit = Math.floor((subscriptionAmount - 1) / 0.0085);
   try {
     // Validate subscriptionAmount
-    console.log(subscriptionAmount);
     if (isNaN(subscriptionAmount) || subscriptionAmount < 5) {
       const error = new Error("Invalid Amount");
       error.statusCode = 403;
@@ -70,7 +69,7 @@ exports.createGroup = async (req, res, next) => {
         }
       ]
     });
-    // Create the new Group
+    // Create/save the new Group and new TextHistory
     const group = new Group({
       userId,
       name,
@@ -90,9 +89,7 @@ exports.createGroup = async (req, res, next) => {
         count: 0
       }
     });
-    // Create text history
     const textHistory = new TextHistory({ groupId: group.id });
-
     await group.save();
     await textHistory.save();
     res.json({ customer: stripeCustomer, subscription: stripeSubscription });
