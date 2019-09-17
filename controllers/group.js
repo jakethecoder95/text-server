@@ -23,10 +23,10 @@ const client = require("twilio")(accountSid, authToken);
 exports.createGroup = async (req, res, next) => {
   const { subscriptionAmount, tokenId, name, number } = req.body,
     { userId } = req,
-    smsLimit = Math.floor((subscriptionAmount - 1) / 0.0085);
+    smsLimit = Math.floor((subscriptionAmount - 1.3) / 0.008);
   try {
     // Validate subscriptionAmount
-    if (isNaN(subscriptionAmount) || subscriptionAmount < 5) {
+    if (isNaN(subscriptionAmount) || subscriptionAmount < 3) {
       const error = new Error("Invalid Amount");
       error.statusCode = 403;
       throw error;
@@ -38,18 +38,28 @@ exports.createGroup = async (req, res, next) => {
       error.statusCode = 401;
       throw error;
     }
+    // Initialize group so we can use its id as metadata
+    const group = new Group({
+      userId,
+      name,
+      number
+    });
     // Purchase twilio number
-    // const incomingPhoneNumber = await client.incomingPhoneNumbers.create({
-    //   phoneNumber: number,
-    //   smsUrl: "https://grouptext.herokuapp.com/sms/receive"
-    // });
-    // console.log(incomingPhoneNumber);
+    await client.incomingPhoneNumbers.create({
+      phoneNumber: number,
+      smsUrl: "https://grouptext.herokuapp.com/sms/receive"
+    });
+    const metadata = {
+      userId: user._id.toString(),
+      groupId: group._id.toString()
+    };
     // Create stripe customer
     const stripeCustomer = await stripe.customers.create({
       name: user.name,
       email: user.email,
       description: "Customer for grouptext.netlify.com",
-      source: tokenId // obtained with Stripe.js
+      source: tokenId, // obtained with Stripe.js
+      metadata
     });
     // Create stripe plan
     const plan = await stripe.plans.create({
@@ -58,7 +68,8 @@ exports.createGroup = async (req, res, next) => {
       product: {
         name: `${user.name}-plan`
       },
-      currency: "usd"
+      currency: "usd",
+      metadata
     });
     // Create stripe monthly subscription
     const stripeSubscription = await stripe.subscriptions.create({
@@ -67,36 +78,32 @@ exports.createGroup = async (req, res, next) => {
         {
           plan: plan.id
         }
-      ]
+      ],
+      metadata
     });
-    // Create/save the new Group and new TextHistory
-    const group = new Group({
-      userId,
-      name,
-      number,
-      stripe: {
-        customerId: stripeCustomer.id,
-        planId: plan.id,
-        subscriptionId: stripeSubscription.id
-      },
-      currentBillingPeriod: {
-        start: stripeSubscription.current_period_start,
-        end: stripeSubscription.current_period_end
-      },
-      monthlySms: {
-        limit: smsLimit,
-        pay: subscriptionAmount,
-        count: 0
-      }
-    });
+    // Update/save the new Group and new TextHistory
+    group.stripe = {
+      customerId: stripeCustomer.id,
+      planId: plan.id,
+      subscriptionId: stripeSubscription.id
+    };
+    group.currentBillingPeriod = {
+      start: stripeSubscription.current_period_start,
+      end: stripeSubscription.current_period_end
+    };
+    group.monthlySms = {
+      limit: smsLimit,
+      pay: subscriptionAmount,
+      count: 0
+    };
     const textHistory = new TextHistory({ groupId: group.id });
     await group.save();
     await textHistory.save();
-    res.json({ customer: stripeCustomer, subscription: stripeSubscription });
+    res.json({ group });
 
     // Send welcome text
     await sendSms(
-      "+19165874838",
+      group.number,
       user.phoneNumber,
       "Welcome! Your first text from your new group"
     );
@@ -112,9 +119,7 @@ exports.fetchGroup = async (req, res, next) => {
   const userId = req.userId,
     groupId = req.query.groupId;
   try {
-    const group = await Group.findById(groupId)
-      .populate("bucket")
-      .populate("people");
+    const group = await Group.findById(groupId).populate("people");
     if (!group) {
       const error = new Error("No Group found!");
       error.statusCode = 401;
