@@ -153,7 +153,6 @@ exports.fetchNumberList = async (req, res, next) => {
       throw Error;
     }
     const availableNumberFinder = await client.availablePhoneNumbers("US");
-    console.log(searchValue);
     const numberList = await availableNumberFinder.local.list({
       [searchType]: searchValue || user.phoneNumber,
       smsEnabled: true
