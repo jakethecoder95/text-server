@@ -5,6 +5,4 @@ const userController = require("../controllers/user");
 
 const router = express.Router();
 
-router.get("/fetch-bucket", isAuth, userController.fetchBucket);
-
 module.exports = router;

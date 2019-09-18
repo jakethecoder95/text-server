@@ -1,16 +1,13 @@
-const MessagingResponse = require("twilio").twiml.MessagingResponse;
+const bcrypt = require("bcryptjs");
 
 const User = require("../models/User");
 const Group = require("../models/Group");
-const Bucket = require("../models/Bucket");
-const Billing = require("../models/Billing");
+const TextHistory = require("../models/TextHistory");
 const Person = require("../models/Person");
 const { sendSms } = require("../util/sms-functions");
 
 exports.sendGroupSms = async (req, res, next) => {
-  const password = req.body.password;
-  const { people, message } = req.body;
-
+  const { password, people, message, groupId } = req.body;
   try {
     const user = await User.findById(req.userId);
     if (!user) {
@@ -18,9 +15,8 @@ exports.sendGroupSms = async (req, res, next) => {
       error.statusCode = 401;
       throw error;
     }
-
     // Test the given password
-    const match = await bcrypt.compare(password, group.password);
+    const match = await bcrypt.compare(password, user.password);
     if (!match) {
       const error = new Error("Incorrect Password");
       error.statusCode = 401;
@@ -28,33 +24,17 @@ exports.sendGroupSms = async (req, res, next) => {
       error.value = password;
       throw error;
     }
-
     // Get the group from the db
-    const group = await Group.findById(user.groupId);
+    const group = await Group.findById(groupId);
     if (!group) {
       const error = new Error("No group was found");
       error.statusCode = 401;
       throw error;
     }
-
-    // Check to make sure there is enough in group bucket to complete the transaction
-    const bucket = await Bucket.findById(group.bucketId);
-    if (!bucket) {
-      const error = new Error("Group buket was not found");
-      error.statusCode = 403;
-      throw error;
-    }
+    // Check to make sure group has enough texts left in current cycle
     const smsPerMessageCnt = Math.floor(message.length / 160) + 1;
-    const totalPrice =
-      group.payment.smsPrice * smsPerMessageCnt * people.length;
-    if (bucket.amount < totalPrice) {
-      const error = new Error("Not enough money in bucket");
-      error.statusCode = 403;
-      throw error;
-    }
-    bucket.amount -= totalPrice;
-    await bucket.save();
-
+    group.monthlySms.count += group.people.length * smsPerMessageCnt;
+    await group.save();
     // All clear to send to number list
     const messageSIDs = [];
     const failed = [];
@@ -70,19 +50,15 @@ exports.sendGroupSms = async (req, res, next) => {
         };
         failed.push(error);
       }
-      console.log(response);
     }
-
-    // Add payment to the groups billing record
-    const billing = Billing.findOne(group._id);
-    billing.sent.push({
+    // Add payment to the groups TextHistory record
+    const textHistory = await TextHistory.findOne({ groupId: group._id });
+    textHistory.sent.push({
       date: new Date().toISOString(),
-      amount: totalPrice,
       sids: messageSIDs
     });
-    await billing.save();
-
-    res.status(200).json({ bucket, failedTexts: failed });
+    await textHistory.save();
+    res.status(200).json({ group, failedTexts: failed });
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;
@@ -97,32 +73,32 @@ exports.recieveSms = async (req, res, next) => {
       .replace("\n", " ")
       .split(" "),
     from = From.replace("+", ""),
-    to = To.replace("+", ""),
     date = new Date().toISOString(),
     sentMessageSIDs = [];
 
   let responseMessage,
-    totalPrice = 0;
+    totalSms = 0;
   try {
     // Find group
-    const group = await Group.findOne({ number: to }).populate("people");
+    const group = await Group.findOne({ number: To }).populate([
+      "people",
+      "userId",
+      "admins"
+    ]);
     if (!group) {
       console.log("there is no group");
       const error = new Error("No group was found");
       error.statusCode = 401;
       throw error;
     }
+    // Add to text from group text amount
+    group.monthlySms.count += 1;
+    await group.save();
 
-    // Find Bucket and deduce recieving price
-    const bucket = await Bucket.findById(group.bucketId);
-    bucket.amount -= group.payment.smsPrice;
-    await bucket.save();
-
-    // Get Billing
-    const billing = await Billing.findOne({ groupId: group._id });
-    billing.recieved.push({
+    // Get TextHistory
+    const textHistory = await TextHistory.findOne({ groupId: group._id });
+    textHistory.received.push({
       date,
-      amount: group.payment.smsPrice,
       sid: SID
     });
 
@@ -167,14 +143,12 @@ exports.recieveSms = async (req, res, next) => {
 
     // Send group text if group message starts with "SEND"
     if (messageArr[0] === "SEND") {
-      await group.populate("owner");
       let numberAuthorized = false;
       // Check if number is from group owner
-      if (from === group.owner.phoneNumber) {
+      if (from === group.userId.phoneNumber) {
         numberAuthorized = true;
       } else {
         // Check if number is from group admin
-        await group.populate("admins");
         const admin = group.admins.find(admin => admin.phoneNumber);
         if (admin) {
           numberAuthorized = true;
@@ -186,15 +160,17 @@ exports.recieveSms = async (req, res, next) => {
         throw error;
       }
       // Get message
-      const { people, payment } = group;
+      const { people, monthlySms } = group;
       messageArr.shift();
       messageArr.slice(0, 2);
       message = messageArr.join(" ").trim();
-      // Check to make sure there is enough in group bucket to complete the transaction
+      // Check to make sure the group has enough texts for this month
       const smsPerMessageCnt = Math.floor(message.length / 160) + 1;
-      totalPrice += payment.textPrice * smsPerMessageCnt * people.length;
-      if (bucket.amount < totalPrice) {
-        const error = new Error("Not enough money in bucket");
+      totalSms += people.length * smsPerMessageCnt;
+      if (monthlySms.limit < monthlySms.count + totalSms) {
+        const error = new Error(
+          "Group does not have enough texts in current pay cycle"
+        );
         error.statusCode = 403;
         throw error;
       }
@@ -204,8 +180,8 @@ exports.recieveSms = async (req, res, next) => {
         const { number } = person;
         const response = await sendSms(group.number, number, message);
         sentMessageSIDs.push(response.sid);
-        console.log(response);
       }
+      console.log("Sent Messages");
       responseMessage = "Your messages were sent!";
     }
 
@@ -213,19 +189,16 @@ exports.recieveSms = async (req, res, next) => {
     if (responseMessage) {
       const response = await sendSms(group.number, from, responseMessage);
       sentMessageSIDs.push(response.sid);
-      totalPrice += group.payment.smsPrice;
-      bucket.amount -= totalPrice;
-      // Add to Group bill for sent message(s)
-      billing.sent.push({
+      totalSms += 1;
+      // Add to sent messages Group textHistory
+      textHistory.sent.push({
         date,
-        amount: totalPrice,
         sids: sentMessageSIDs
       });
     }
-
+    group.monthlySms.count += totalSms;
     await group.save();
-    await bucket.save();
-    await billing.save();
+    await textHistory.save();
     res.status(200).json({ message: responseMessage, number: from });
   } catch (err) {
     if (!err.statusCode) {

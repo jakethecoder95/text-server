@@ -6,12 +6,12 @@ const Person = require("../models/Person");
 const Group = require("../models/Group");
 
 exports.addPerson = async (req, res, next) => {
-  let { name, number } = req.body;
-  const groupId = req.groupId;
+  let { name, number, groupId } = req.body;
   number = number.replace(/\D/g, "");
   if (number.length === 10) {
     number = "1" + number;
   }
+  console.log(groupId);
   try {
     const group = await Group.findById(groupId).populate("people");
     if (!group) {
@@ -41,8 +41,7 @@ exports.addPerson = async (req, res, next) => {
 };
 
 exports.deletePerson = async (req, res, next) => {
-  const personId = req.body.personId;
-  const groupId = req.groupId;
+  const { personId, groupId } = req.body;
   try {
     const group = await Group.findById(groupId).populate("people");
     if (!group) {

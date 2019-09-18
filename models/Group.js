@@ -4,26 +4,13 @@ const Schema = mongoose.Schema;
 const groupSchema = new Schema({
   userId: {
     type: Schema.Types.ObjectId,
-    require: true
+    require: true,
+    ref: "User"
   },
   activated: {
     type: Boolean,
     require: true,
     default: true
-  },
-  stripe: {
-    customerId: {
-      type: String,
-      required: true
-    },
-    subscriptionId: {
-      type: String,
-      required: true
-    },
-    planId: {
-      type: String,
-      required: true
-    }
   },
   name: {
     type: String,

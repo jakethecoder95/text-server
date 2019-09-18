@@ -6,7 +6,6 @@ const _ = require("lodash");
 
 const Group = require("../models/Group");
 const User = require("../models/User");
-const Bucket = require("../models/Bucket");
 require("../models/Person");
 
 if (process.env.NODE_ENV !== "production") require("dotenv").config();
@@ -32,7 +31,6 @@ exports.signup = async (req, res, next) => {
       name,
       phoneNumber: newPhoneNumber
     });
-    const bucket = new Bucket({ userId: user._id, name: user.name });
     const token = jwt.sign(
       {
         email: user.email,
@@ -40,9 +38,7 @@ exports.signup = async (req, res, next) => {
       },
       process.env.JWT_SECRET
     );
-    await bucket.save();
     await user.save();
-    req.bucket = bucket;
     req.token = token;
     req.userId = user._id;
     next();
@@ -96,7 +92,6 @@ exports.signin = async (req, res, next) => {
 exports.initUser = async (req, res, next) => {
   const groups = [];
   const token = req.token; // Only on signup/login
-  const bucket = req.bucket; // Only on signup
   try {
     const user = await User.findById(req.userId).populate("people");
     if (!user) {
@@ -120,7 +115,7 @@ exports.initUser = async (req, res, next) => {
     groups.push(...adminGroups);
     res
       .status(200)
-      .json({ user: _.omit(user._doc, "password"), groups, token, bucket });
+      .json({ user: _.omit(user._doc, "password"), groups, token });
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;

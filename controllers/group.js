@@ -3,8 +3,9 @@ const _ = require("lodash");
 const TextHistory = require("../models/TextHistory");
 const Group = require("../models/Group");
 const User = require("../models/User");
+const Stripe = require("../models/Stripe");
 const { sendSms } = require("../util/sms-functions");
-require("../models/Bucket");
+require("../models/Stripe");
 
 if (process.env.NODE_ENV !== "production") require("dotenv").config();
 
@@ -81,12 +82,7 @@ exports.createGroup = async (req, res, next) => {
       ],
       metadata
     });
-    // Update/save the new Group and new TextHistory
-    group.stripe = {
-      customerId: stripeCustomer.id,
-      planId: plan.id,
-      subscriptionId: stripeSubscription.id
-    };
+    // Update the new Group and new TextHistory
     group.currentBillingPeriod = {
       start: stripeSubscription.current_period_start,
       end: stripeSubscription.current_period_end
@@ -96,8 +92,17 @@ exports.createGroup = async (req, res, next) => {
       pay: subscriptionAmount,
       count: 0
     };
+    // Initialize group stripe info
+    const stripeInfo = new Stripe({
+      userId: user._id,
+      groupId: group._id,
+      customerId: stripeCustomer.id,
+      planId: plan.id,
+      subscriptionId: stripeSubscription.id
+    });
     const textHistory = new TextHistory({ groupId: group.id });
     await group.save();
+    await stripeInfo.save();
     await textHistory.save();
     res.json({ group });
 
@@ -107,6 +112,38 @@ exports.createGroup = async (req, res, next) => {
       user.phoneNumber,
       "Welcome! Your first text from your new group"
     );
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};
+
+exports.subscriptionUpdated = async (req, res, next) => {
+  const subscription = req.body.data.object;
+  let responseMessage = "Update received: UNHANDLED";
+  try {
+    // Find group
+    const group = await Group.findById(subscription.metadata.groupId);
+    if (!group) {
+      const error = new Error(
+        "There was no group found by stripe info groupId"
+      );
+      error.statusCode = 500;
+      throw error;
+    }
+    // If new billing cycle: Update group monthlySms.count & currentBillingPeriod.start and .end
+    if (subscription.current_period_end !== group.currentBillingPeriod.end) {
+      group.monthlySms.count = 0;
+      group.currentBillingPeriod = {
+        start: subscription.current_period_start,
+        end: subscription.current_period_end
+      };
+      responseMessage = "Successfully updated billing cycle";
+    }
+    await group.save();
+    res.status(200).json({ message: responseMessage });
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;

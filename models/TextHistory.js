@@ -6,16 +6,30 @@ const textHistorySchema = new Schema({
     type: Schema.Types.ObjectId,
     required: true
   },
-  sentHistory: [
+  sent: [
     {
-      type: String,
-      required: true
+      date: {
+        type: Date,
+        required: true
+      },
+      sids: [
+        {
+          type: String,
+          required: true
+        }
+      ]
     }
   ],
-  recievedHistory: [
+  received: [
     {
-      type: String,
-      required: true
+      date: {
+        type: Date,
+        required: true
+      },
+      sid: {
+        type: String,
+        required: true
+      }
     }
   ]
 });
