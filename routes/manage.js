@@ -26,25 +26,12 @@ router.post(
   manageControllers.updatePersonalSettings
 );
 
-router.post(
-  "/update-nexmo-settings",
-  isAuth,
-  [
-    body("nexmoNumber")
-      .trim()
-      .isMobilePhone()
-      .not()
-      .isEmpty(),
-    body("apiKey")
-      .trim()
-      .not()
-      .isEmpty(),
-    body("secretKey")
-      .trim()
-      .not()
-      .isEmpty()
-  ],
-  manageControllers.updateNexmoSettings
-);
+router.post("/update-group-name", isAuth, manageControllers.updateGroupName);
+
+router.post("/update-user-password", isAuth, manageControllers.updatePassword);
+
+router.post("/add-admin", isAuth, manageControllers.addAdmin);
+
+router.delete("/remove-admin", isAuth, manageControllers.removeAdmin);
 
 module.exports = router;

@@ -1,4 +1,5 @@
 const _ = require("lodash");
+const bcrypt = require("bcryptjs");
 
 const TextHistory = require("../models/TextHistory");
 const Group = require("../models/Group");
@@ -9,11 +10,11 @@ require("../models/Stripe");
 
 if (process.env.NODE_ENV !== "production") require("dotenv").config();
 
-const accountSid = process.env.ACCOUNT_SID;
-const authToken = process.env.AUTH_TOKEN;
+const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
+const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
 
-const stripe = require("stripe")(process.env.STRIPE_KEY);
-const client = require("twilio")(accountSid, authToken);
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const twilio = require("twilio")(twilioAccountSid, twilioAuthToken);
 
 /*
  * @req.body  name                |  The new group's
@@ -46,10 +47,12 @@ exports.createGroup = async (req, res, next) => {
       number
     });
     // Purchase twilio number
-    await client.incomingPhoneNumbers.create({
+    const newNumber = await twilio.incomingPhoneNumbers.create({
       phoneNumber: number,
       smsUrl: "https://grouptext.herokuapp.com/sms/receive"
     });
+    group.numberSid = newNumber.sid;
+    await group.save();
     const metadata = {
       userId: user._id.toString(),
       groupId: group._id.toString()
@@ -120,6 +123,68 @@ exports.createGroup = async (req, res, next) => {
   }
 };
 
+exports.deleteGroup = async (req, res, next) => {
+  const { password, groupId } = req.body;
+  try {
+    // Get the user
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("No user was found");
+      error.statusCode = 401;
+      throw error;
+    }
+    // Get the group
+    const group = await Group.findById(groupId);
+    if (!group) {
+      const error = new Error("No Group was found");
+      error.statusCode = 401;
+      throw error;
+    }
+    // Get group's Stipe Info
+    const stripeInfo = await Stripe.findOne({ groupId });
+    if (!stripeInfo) {
+      const error = new Error("No stripe info was fround");
+      error.statusCode = 401;
+      throw error;
+    }
+    // Get textHistory
+    const textHistory = await TextHistory.findOne({ groupId });
+    // Check to see if user is Group owner
+    if (group.userId.toString() !== user._id.toString()) {
+      const error = new Error("Must be the group owner to delete group.");
+      error.statusCode = 401;
+      error.type = "Access Denied: Must be group owner.";
+      throw error;
+    }
+    // Check to see if password matches user
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) {
+      const error = new Error("Incorrect Password");
+      error.statusCode = 401;
+      error.type = "password";
+      error.value = password;
+      throw error;
+    }
+    // Cancel twilio phone number
+    await twilio.incomingPhoneNumbers(group.numberSid).remove();
+    // Delete all stripe info
+    await stripe.subscriptions.del(stripeInfo.subscriptionId);
+    await stripe.plans.del(stripeInfo.planId);
+    await stripe.customers.del(stripeInfo.customerId);
+    await Stripe.findByIdAndDelete(stripeInfo._id.toString());
+    // Delete TextHistory
+    await TextHistory.findOneAndDelete(textHistory._id.toString());
+    // Delete group
+    await Group.findOneAndDelete(groupId);
+    res.status(200).json({ message: "Deleted successfully" });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};
+
 exports.subscriptionUpdated = async (req, res, next) => {
   const subscription = req.body.data.object;
   let responseMessage = "Update received: UNHANDLED";
@@ -156,7 +221,7 @@ exports.fetchGroup = async (req, res, next) => {
   const userId = req.userId,
     groupId = req.query.groupId;
   try {
-    const group = await Group.findById(groupId).populate("people");
+    const group = await Group.findById(groupId).populate(["people", "admins"]);
     if (!group) {
       const error = new Error("No Group found!");
       error.statusCode = 401;
@@ -164,7 +229,7 @@ exports.fetchGroup = async (req, res, next) => {
     }
     const isGroupOwner = userId === group.userId.toString();
     const isGroupAdmin = group.admins.find(
-      adminId => adminId.toString() === userId
+      admin => admin._id.toString() === userId
     );
     if (!isGroupOwner && !isGroupAdmin) {
       const error = new Error("Access deneid");
@@ -189,7 +254,7 @@ exports.fetchNumberList = async (req, res, next) => {
       error.statusCode = 401;
       throw Error;
     }
-    const availableNumberFinder = await client.availablePhoneNumbers("US");
+    const availableNumberFinder = await twilio.availablePhoneNumbers("US");
     const numberList = await availableNumberFinder.local.list({
       [searchType]: searchValue || user.phoneNumber,
       smsEnabled: true
@@ -200,6 +265,112 @@ exports.fetchNumberList = async (req, res, next) => {
       postalCode
     }));
     res.status(200).json({ numbers });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};
+
+exports.updateGroupCard = async (req, res, next) => {
+  const { stripeCustomerId, stripeToken, oldCardId } = req.body;
+  try {
+    await stripe.customers.deleteSource(stripeCustomerId, oldCardId);
+    await stripe.customers.createSource(stripeCustomerId, {
+      source: stripeToken
+    });
+    res.status(200).json({ message: "Your card was updated!" });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};
+
+exports.fetchCard = async (req, res, next) => {
+  const { groupId } = req.query;
+  try {
+    const stripeInfo = await Stripe.findOne({ groupId });
+    if (!stripeInfo) {
+      const error = new Error("No stripe info was fround");
+      error.statusCode = 401;
+      throw error;
+    }
+    const stripeCustomer = await stripe.customers.retrieve(
+      stripeInfo.customerId
+    );
+    const card = await stripe.customers.retrieveSource(
+      stripeInfo.customerId,
+      stripeCustomer.default_source
+    );
+    res.status(200).json({ card });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};
+
+exports.updatePaymentPlan = async (req, res, next) => {
+  const { groupId, amount } = req.body;
+  // Validate subscriptionAmount
+  if (isNaN(amount) || amount < 3) {
+    const error = new Error("Invalid Amount");
+    error.statusCode = 403;
+    throw error;
+  }
+  const smsLimit = Math.floor((amount - 1.3) / 0.008);
+  try {
+    // Find the group
+    const group = await Group.findById(groupId).populate(["people", "admins"]);
+    if (!group) {
+      const error = new Error("No Group was found");
+      error.statusCode = 401;
+      throw error;
+    }
+    // Get group's stripe info
+    const stripeInfo = await Stripe.findOne({ groupId });
+    if (!stripeInfo) {
+      const error = new Error("No stripe info was fround");
+      error.statusCode = 401;
+      throw error;
+    }
+    // Delete old plan
+    await stripe.plans.del(stripeInfo.planId);
+    // Create stripe plan
+    const plan = await stripe.plans.create({
+      amount: amount * 100,
+      interval: "month",
+      product: {
+        name: `${group.name}-plan`
+      },
+      currency: "usd",
+      metadata: { groupId }
+    });
+    // Update stripe monthly subscription
+    const subscription = await stripe.subscriptions.retrieve(
+      stripeInfo.subscriptionId
+    );
+    stripe.subscriptions.update(stripeInfo.subscriptionId, {
+      cancel_at_period_end: false,
+      items: [
+        {
+          id: subscription.items.data[0].id,
+          plan: plan.id
+        }
+      ]
+    });
+    // Update stripe info
+    stripeInfo.planId = plan.id;
+    // Update group
+    group.monthlySms.limit = smsLimit;
+    group.monthlySms.pay = amount;
+    await group.save();
+    await stripeInfo.save();
+    res.status(200).json({ message: "Payment plan was updated", group });
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;

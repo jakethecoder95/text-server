@@ -13,8 +13,7 @@ if (process.env.NODE_ENV !== "production") require("dotenv").config();
 
 const app = express();
 
-const URI_PASSWORD = process.env.URI_PASSWORD;
-const MONGODB_URI = `mongodb+srv://jacob:${URI_PASSWORD}@cluster0-qmdqb.mongodb.net/text`;
+const MONGODB_URI = process.env.MONGODB_URI;
 const PORT = process.env.PORT;
 
 app.use(bodyParser.json());

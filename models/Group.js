@@ -12,11 +12,19 @@ const groupSchema = new Schema({
     require: true,
     default: true
   },
+  deactivatedMessage: {
+    type: String,
+    require: false
+  },
   name: {
     type: String,
     required: true
   },
   number: {
+    type: String,
+    required: true
+  },
+  numberSid: {
     type: String,
     required: true
   },
@@ -37,25 +45,25 @@ const groupSchema = new Schema({
   currentBillingPeriod: {
     start: {
       type: Number,
-      required: true
+      required: false
     },
     end: {
       type: Number,
-      required: true
+      required: false
     }
   },
   monthlySms: {
     limit: {
       type: Number,
-      require: true
+      require: false
     },
     pay: {
       type: Number,
-      required: true
+      required: false
     },
     count: {
       type: Number,
-      require: true
+      require: false
     }
   }
 });

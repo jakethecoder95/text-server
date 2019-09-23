@@ -75,7 +75,6 @@ exports.recieveSms = async (req, res, next) => {
     from = From.replace("+", ""),
     date = new Date().toISOString(),
     sentMessageSIDs = [];
-
   let responseMessage,
     totalSms = 0;
   try {
@@ -94,21 +93,18 @@ exports.recieveSms = async (req, res, next) => {
     // Add to text from group text amount
     group.monthlySms.count += 1;
     await group.save();
-
     // Get TextHistory
     const textHistory = await TextHistory.findOne({ groupId: group._id });
     textHistory.received.push({
       date,
       sid: SID
     });
-
     // Initialize person and check for number in group people list
     let person;
     const personInGroup = group.people.find(per => per.number === from);
     if (personInGroup) {
       person = await Person.findById(personInGroup._id);
     }
-
     // Add or edit person if message begins with 1
     if (messageArr[0] === "1") {
       // Get the name
@@ -131,7 +127,6 @@ exports.recieveSms = async (req, res, next) => {
       }
       await person.save();
     }
-
     // Remove person from group list if message starts with 2
     if (messageArr[0] === "2" && person) {
       group.people = group.people.filter(
@@ -140,7 +135,6 @@ exports.recieveSms = async (req, res, next) => {
       await Person.deleteOne(person);
       responseMessage = `You successfully left ${group.name} GroupText! Text 1 and your name at any time to join again. [No reply]`;
     }
-
     // Send group text if group message starts with "SEND"
     if (messageArr[0] === "SEND") {
       let numberAuthorized = false;
@@ -184,7 +178,6 @@ exports.recieveSms = async (req, res, next) => {
       console.log("Sent Messages");
       responseMessage = "Your messages were sent!";
     }
-
     // Send responseMessage
     if (responseMessage) {
       const response = await sendSms(group.number, from, responseMessage);

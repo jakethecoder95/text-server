@@ -53,7 +53,7 @@ exports.signup = async (req, res, next) => {
 exports.signin = async (req, res, next) => {
   const { email, password } = req.body;
   try {
-    const user = await User.findOne({ email }).populate("people");
+    const user = await User.findOne({ email });
     // Throw error if no user is found with given email
     if (!user) {
       const error = new Error("No user could be found by that email address");
@@ -93,7 +93,7 @@ exports.initUser = async (req, res, next) => {
   const groups = [];
   const token = req.token; // Only on signup/login
   try {
-    const user = await User.findById(req.userId).populate("people");
+    const user = await User.findById(req.userId);
     if (!user) {
       const error = new Error("User was not found by that");
       error.statusCode = 401;
