@@ -38,4 +38,6 @@ router.post("/merge-armory", manageControllers.mergeArmory);
 
 router.post("/merge-hsm", manageControllers.mergeHsm);
 
+router.get("/get-all-people", manageControllers.getAllPeople);
+
 module.exports = router;

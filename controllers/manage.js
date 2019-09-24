@@ -231,7 +231,7 @@ exports.mergeArmory = async (req, res, next) => {
       throw error;
     }
     oldGroup.people.forEach(personId => {
-      currentGroup.push(personId);
+      currentGroup.people.push(personId);
     });
     await currentGroup.save();
     res.status(200).json({ group: currentGroup });
@@ -259,7 +259,7 @@ exports.mergeHsm = async (req, res, next) => {
       throw error;
     }
     oldGroup.people.forEach(personId => {
-      currentGroup.push(personId);
+      currentGroup.people.push(personId);
     });
     await currentGroup.save();
     res.status(200).json({ group: currentGroup });
@@ -269,4 +269,16 @@ exports.mergeHsm = async (req, res, next) => {
     }
     next(err);
   }
+};
+
+exports.getAllPeople = (req, res, next) => {
+  Person.find({}, function(err, people) {
+    var peopleMap = {};
+
+    people.forEach(function(person) {
+      peopleMap[person._id] = person;
+    });
+
+    res.status(200).json({ peopleMap });
+  });
 };
