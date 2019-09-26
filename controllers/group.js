@@ -237,7 +237,7 @@ exports.paymentSucceeded = async (req, res, next) => {
   } = req.body.data.object;
   try {
     const response = await transporter.sendMail({
-      to: "95jacob07@gmail.com",
+      to: customer_email,
       from: "noreply@grouptext.com",
       subject: "GroupText Receipt",
       html: `
