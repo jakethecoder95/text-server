@@ -68,7 +68,7 @@ exports.sendGroupSms = async (req, res, next) => {
 };
 
 exports.recieveSms = async (req, res, next) => {
-  const { Body, From, To, SID } = req.body,
+  const { Body, From, To, SID, SmsSid } = req.body,
     messageArr = Body.trim()
       .replace("\n", " ")
       .split(" "),
@@ -97,7 +97,7 @@ exports.recieveSms = async (req, res, next) => {
     const textHistory = await TextHistory.findOne({ groupId: group._id });
     textHistory.received.push({
       date,
-      sid: SID
+      sid: SmsSid
     });
     // Initialize person and check for number in group people list
     let person;
