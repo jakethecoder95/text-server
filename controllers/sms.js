@@ -5,6 +5,7 @@ const Group = require("../models/Group");
 const TextHistory = require("../models/TextHistory");
 const Person = require("../models/Person");
 const { sendSms } = require("../util/sms-functions");
+const MessagingResponse = require("twilio").twiml.MessagingResponse;
 
 exports.sendGroupSms = async (req, res, next) => {
   const { password, people, message, groupId } = req.body;
@@ -192,7 +193,7 @@ exports.recieveSms = async (req, res, next) => {
     group.monthlySms.count += totalSms;
     await group.save();
     await textHistory.save();
-    res.status(200).json({ message: responseMessage, number: from });
+    res.status(200).send("Success");
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;
