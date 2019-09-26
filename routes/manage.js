@@ -34,10 +34,6 @@ router.post("/add-admin", isAuth, manageControllers.addAdmin);
 
 router.delete("/remove-admin", isAuth, manageControllers.removeAdmin);
 
-router.post("/merge-armory", manageControllers.mergeArmory);
-
-router.post("/merge-hsm", manageControllers.mergeHsm);
-
 router.get("/get-all-people", manageControllers.getAllPeople);
 
 module.exports = router;

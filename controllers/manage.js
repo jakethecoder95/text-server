@@ -215,62 +215,6 @@ exports.removeAdmin = async (req, res, next) => {
   }
 };
 
-exports.mergeArmory = async (req, res, next) => {
-  const { groupId } = req.body;
-  try {
-    const currentGroup = await Group.findById(groupId);
-    if (!currentGroup) {
-      const error = new Error("No group found");
-      error.statusCode = 401;
-      throw error;
-    }
-    const oldGroup = await Group.findById("5d585d3bf54227625095c9a2");
-    if (!oldGroup) {
-      const error = new Error("Old Group not found");
-      error.statusCode = 401;
-      throw error;
-    }
-    oldGroup.people.forEach(personId => {
-      currentGroup.people.push(personId);
-    });
-    await currentGroup.save();
-    res.status(200).json({ group: currentGroup });
-  } catch (err) {
-    if (!err.statusCode) {
-      err.statusCode = 500;
-    }
-    next(err);
-  }
-};
-
-exports.mergeHsm = async (req, res, next) => {
-  const { groupId } = req.body;
-  try {
-    const currentGroup = await Group.findById(groupId);
-    if (!currentGroup) {
-      const error = new Error("No group found");
-      error.statusCode = 401;
-      throw error;
-    }
-    const oldGroup = await Group.findById("5d5c724d7f695500171b1db3");
-    if (!oldGroup) {
-      const error = new Error("Old Group not found");
-      error.statusCode = 401;
-      throw error;
-    }
-    oldGroup.people.forEach(personId => {
-      currentGroup.people.push(personId);
-    });
-    await currentGroup.save();
-    res.status(200).json({ group: currentGroup });
-  } catch (err) {
-    if (!err.statusCode) {
-      err.statusCode = 500;
-    }
-    next(err);
-  }
-};
-
 exports.getAllPeople = (req, res, next) => {
   Person.find({}, function(err, people) {
     var peopleMap = {};
