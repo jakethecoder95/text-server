@@ -1,5 +1,7 @@
 const _ = require("lodash");
 const bcrypt = require("bcryptjs");
+const nodemailer = require("nodemailer");
+const sendgridTransport = require("nodemailer-sendgrid-transport");
 
 const TextHistory = require("../models/TextHistory");
 const Group = require("../models/Group");
@@ -15,6 +17,14 @@ const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
 
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const twilio = require("twilio")(twilioAccountSid, twilioAuthToken);
+
+const transporter = nodemailer.createTransport(
+  sendgridTransport({
+    auth: {
+      api_key: process.env.SENDGRID_KEY
+    }
+  })
+);
 
 /*
  * @req.body  name                |  The new group's
@@ -215,6 +225,42 @@ exports.subscriptionUpdated = async (req, res, next) => {
     }
     next(err);
   }
+};
+
+exports.paymentSucceeded = async (req, res, next) => {
+  const {
+    amount_paid,
+    date,
+    customer_email,
+    invoice_pdf,
+    hosted_invoice_url
+  } = req.body.data.object;
+  try {
+    const response = await transporter.sendMail({
+      to: "95jacob07@gmail.com",
+      from: "noreply@grouptext.com",
+      subject: "GroupText Receipt",
+      html: `
+        <h3>Your GroupText Receipt</h3>
+        <p>Hey, just want to let you know that your card was charged for this month's GroupText fees.</p>
+        <ul>
+          <li>Amount:$${(amount_paid / 100).toFixed(2)}</li>
+          <li>Date Charged: ${new Date(date * 1000)}</li>
+          <li>Receipt URL: ${hosted_invoice_url}</li>
+          <li>Receipt PDF: ${invoice_pdf}
+        </ul>
+        <p>If you have any questions or issues please contact me at "95jacob07@gmail.com"</p>
+        <p>Thanks for using GroupText!</p>
+      `
+    });
+    res.status(200).json({ message: "Successfully sent email", response });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+  res.status(200).send();
 };
 
 exports.fetchGroup = async (req, res, next) => {

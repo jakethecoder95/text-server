@@ -11,6 +11,8 @@ router.delete("/delete-group", isAuth, groupControllers.deleteGroup);
 
 router.use("/subscription-updated", groupControllers.subscriptionUpdated);
 
+router.use("/payment-succeeded", groupControllers.paymentSucceeded);
+
 router.get("/fetch-group", isAuth, groupControllers.fetchGroup);
 
 router.get("/fetch-numbers-list", isAuth, groupControllers.fetchNumberList);
