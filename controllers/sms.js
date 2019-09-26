@@ -194,7 +194,7 @@ exports.recieveSms = async (req, res, next) => {
     await group.save();
     await textHistory.save();
     res.writeHead(200, { "Content-Type": "text/xml" });
-    res.end("Success");
+    res.end(twiml.toString());
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;
