@@ -193,7 +193,8 @@ exports.recieveSms = async (req, res, next) => {
     group.monthlySms.count += totalSms;
     await group.save();
     await textHistory.save();
-    res.status(200).send("Success");
+    res.writeHead(200, { "Content-Type": "text/xml" });
+    res.end("Success");
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;
