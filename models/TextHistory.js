@@ -28,7 +28,7 @@ const textHistorySchema = new Schema({
       },
       sid: {
         type: String,
-        required: true
+        required: false
       }
     }
   ]
