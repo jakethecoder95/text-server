@@ -193,6 +193,7 @@ exports.recieveSms = async (req, res, next) => {
     group.monthlySms.count += totalSms;
     await group.save();
     await textHistory.save();
+    const twiml = new MessagingResponse();
     res.writeHead(200, { "Content-Type": "text/xml" });
     res.end(twiml.toString());
   } catch (err) {
