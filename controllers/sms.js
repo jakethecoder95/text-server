@@ -37,28 +37,11 @@ exports.sendGroupSms = async (req, res, next) => {
     group.monthlySms.count += group.people.length * smsPerMessageCnt;
     await group.save();
     // All clear to send to number list
-    const messageSIDs = [];
     const failed = [];
     for (let person of people) {
-      const { name, number } = person;
-      const response = await sendSms(group.number, number, message);
-      messageSIDs.push(response.sid);
-      if (response.errorMessage) {
-        const error = {
-          name,
-          number,
-          message: response.errorMessage
-        };
-        failed.push(error);
-      }
+      const { number } = person;
+      sendSms(group.number, number, message);
     }
-    // Add payment to the groups TextHistory record
-    const textHistory = await TextHistory.findOne({ groupId: group._id });
-    textHistory.sent.push({
-      date: new Date().toISOString(),
-      sids: messageSIDs
-    });
-    await textHistory.save();
     res.status(200).json({ group, failedTexts: failed });
   } catch (err) {
     if (!err.statusCode) {
@@ -173,8 +156,7 @@ exports.recieveSms = async (req, res, next) => {
       // All clear to send to number list
       for (let person of people) {
         const { number } = person;
-        const response = await sendSms(group.number, number, message);
-        sentMessageSIDs.push(response.sid);
+        sendSms(group.number, number, message);
       }
       console.log("Sent Messages");
       responseMessage = "Your messages were sent!";
