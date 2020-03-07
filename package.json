@@ -22,17 +22,17 @@
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.19.0",
     "express": "^4.17.1",
-    "express-validator": "^6.1.1",
+    "express-validator": "^6.4.0",
     "jsonwebtoken": "^8.5.1",
     "lodash": "^4.17.15",
-    "mongoose": "^5.6.5",
-    "nexmo": "^2.4.1",
-    "nodemailer": "^6.3.0",
+    "mongoose": "^5.9.3",
+    "nexmo": "^2.6.0",
+    "nodemailer": "^6.4.4",
     "nodemailer-sendgrid-transport": "^0.2.0",
-    "stripe": "^7.9.0",
-    "twilio": "^3.33.4"
+    "stripe": "^7.15.0",
+    "twilio": "^3.40.0"
   },
   "devDependencies": {
-    "dotenv": "^8.0.0"
+    "dotenv": "^8.2.0"
   }
 }
