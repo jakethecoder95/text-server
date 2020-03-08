@@ -12,7 +12,6 @@ exports.addPerson = async (req, res, next) => {
   if (number.length === 10) {
     number = "1" + number;
   }
-  console.log(groupId);
   try {
     const group = await Group.findById(groupId).populate(["people", "admins"]);
     if (!group) {
