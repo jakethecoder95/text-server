@@ -2,7 +2,6 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 
-const textRoutes = require("./routes/text");
 const authRoutes = require("./routes/auth");
 const manageRoutes = require("./routes/manage");
 const groupRoutes = require("./routes/group");
@@ -28,8 +27,6 @@ app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   next();
 });
-
-app.use(textRoutes);
 
 app.use("/auth", authRoutes);
 
