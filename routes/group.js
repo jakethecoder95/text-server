@@ -17,6 +17,8 @@ router.get("/fetch-group", isAuth, groupControllers.fetchGroup);
 
 router.get("/fetch-numbers-list", isAuth, groupControllers.fetchNumberList);
 
+router.get("/fetch-text-history", isAuth, groupControllers.fetchTextHistory);
+
 router.post("/update-card", isAuth, groupControllers.updateGroupCard);
 
 router.get("/fetch-card", isAuth, groupControllers.fetchCard);

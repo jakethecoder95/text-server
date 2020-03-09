@@ -7,7 +7,7 @@ const TextHistory = require("../models/TextHistory");
 const Group = require("../models/Group");
 const User = require("../models/User");
 const Stripe = require("../models/Stripe");
-const { sendSms } = require("../util/sms-functions");
+const { sendSms, getTextHistory } = require("../util/sms-functions");
 require("../models/Stripe");
 
 if (process.env.NODE_ENV !== "production") require("dotenv").config();
@@ -298,7 +298,7 @@ exports.fetchNumberList = async (req, res, next) => {
     if (!user) {
       const error = new Error("No user found");
       error.statusCode = 401;
-      throw Error;
+      throw error;
     }
     const availableNumberFinder = await twilio.availablePhoneNumbers("US");
     const numberList = await availableNumberFinder.local.list({
@@ -311,6 +311,58 @@ exports.fetchNumberList = async (req, res, next) => {
       postalCode
     }));
     res.status(200).json({ numbers });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};
+
+exports.fetchTextHistory = async (req, res, next) => {
+  const groupId = req.query.groupId;
+  try {
+    const group = await Group.findById(groupId);
+    if (!group) {
+      const error = new Error("No group found with that ID");
+      group.statusCode = 403;
+      throw error;
+    }
+    let filteredHistory = [];
+    const textHistory = await getTextHistory(group.number);
+    let outboundMsg;
+    for (let text of textHistory) {
+      if (text.body === outboundMsg) {
+        let lastMessage = filteredHistory[filteredHistory.length - 1];
+        lastMessage.totalSent++;
+        lastMessage.errors = text.error_message ? 1 : 0;
+        continue;
+      }
+      if (text.direction === "outbound-api") {
+        outboundMsg = text.body;
+        filteredHistory.push({
+          type: text.direction,
+          totalSent: 1,
+          errors: text.error_message ? 1 : 0,
+          body: text.body,
+          date: text.dateCreated
+        });
+      }
+      if (text.direction === "inbound") {
+        filteredHistory.push({
+          type: text.direction,
+          number: text.from,
+          body: text.body,
+          date: text.dateCreated
+        });
+      }
+    }
+    filteredHistory.sort((a, b) => {
+      a = new Date(a.date);
+      b = new Date(b.date);
+      return a > b ? -1 : a < b ? 1 : 0;
+    });
+    res.status(200).json({ textHistory: filteredHistory });
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;
