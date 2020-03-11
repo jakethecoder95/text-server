@@ -69,7 +69,6 @@ exports.recieveSms = async (req, res, next) => {
       "admins"
     ]);
     if (!group) {
-      console.log("there is no group");
       const error = new Error("No group was found");
       error.statusCode = 401;
       throw error;
@@ -158,7 +157,6 @@ exports.recieveSms = async (req, res, next) => {
         const { number } = person;
         sendSms(group.number, number, message);
       }
-      console.log("Sent Messages");
       responseMessage = "Your messages were sent!";
     }
     // Send responseMessage
