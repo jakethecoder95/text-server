@@ -38,9 +38,10 @@ exports.sendGroupSms = async (req, res, next) => {
     await group.save();
     // All clear to send to number list
     const failed = [];
+    const messageWithUnsubscribeText = message + "\n[text 2 to unsubscribe]";
     for (let person of people) {
       const { number } = person;
-      sendSms(group.number, number, message);
+      sendSms(group.number, number, messageWithUnsubscribeText);
     }
     res.status(200).json({ group, failedTexts: failed });
   } catch (err) {
@@ -106,7 +107,7 @@ exports.recieveSms = async (req, res, next) => {
       } else {
         person = new Person({ name, number: from });
         group.people.push(person);
-        responseMessage = `Welcome to ${group.name} GroupText! Text 2 at any time to leave the group. [No reply]`;
+        responseMessage = `Welcome to ${group.name} GroupText! Text 2 at any time to leave the group.`;
       }
       await person.save();
     }
@@ -116,7 +117,7 @@ exports.recieveSms = async (req, res, next) => {
         per => per._id.toString() !== person._id.toString()
       );
       await Person.deleteOne(person);
-      responseMessage = `You successfully left ${group.name} GroupText! Text 1 and your name at any time to join again. [No reply]`;
+      responseMessage = `You successfully left ${group.name} GroupText! Text 1 and your name at any time to join again.`;
     }
     // Send group text if group message starts with "SEND"
     if (messageArr[0] === "SEND") {
@@ -153,9 +154,10 @@ exports.recieveSms = async (req, res, next) => {
       }
 
       // All clear to send to number list
+      const messageWithUnsubscribeText = message + "\n[text 2 to unsubscribe]";
       for (let person of people) {
         const { number } = person;
-        sendSms(group.number, number, message);
+        sendSms(group.number, number, messageWithUnsubscribeText);
       }
       responseMessage = "Your messages were sent!";
     }
