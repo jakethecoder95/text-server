@@ -5,13 +5,12 @@ const _ = require("lodash");
 const Person = require("../models/Person");
 const Group = require("../models/Group");
 const User = require("../models/User");
+const { sanitizeUSPhoneNumber } = require("../util/phone-number");
+const { parseCSVToGroup } = require("../util/upload");
 
 exports.addPerson = async (req, res, next) => {
   let { name, number, groupId } = req.body;
-  number = number.replace(/\D/g, "");
-  if (number.length === 10) {
-    number = "1" + number;
-  }
+  number = sanitizeUSPhoneNumber(number);
   try {
     const group = await Group.findById(groupId).populate(["people", "admins"]);
     if (!group) {
@@ -224,4 +223,47 @@ exports.getAllPeople = (req, res, next) => {
 
     res.status(200).json({ peopleMap });
   });
+};
+
+exports.uploadFileToGroup = async (req, res, next) => {
+  const groupId = req.body.groupId;
+  try {
+    const group = await Group.findById(groupId).populate(["people", "admins"]);
+    if (!group) {
+      const error = new Error("No Group found");
+      error.statusCode = 401;
+      throw error;
+    }
+    parseCSVToGroup(
+      req.file.path,
+      // Handle Success Calback
+      async parsedCSV => {
+        let peopleAdded = 0;
+        for (let contact of parsedCSV) {
+          const personInGroup = group.people.find(
+            person => person.number === contact.number
+          );
+          if (!personInGroup) {
+            person = new Person({ name: contact.name, number: contact.number });
+            // await person.save();
+            group.people.push(person);
+            peopleAdded++;
+          }
+        }
+        // await group.save()
+        res
+          .status(200)
+          .json({ message: "People added successfully!", group, peopleAdded });
+      },
+      // Handle Error Callback
+      () => {
+        res.status(422).json({ message: "Sorry we could not read that file." });
+      }
+    );
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
 };

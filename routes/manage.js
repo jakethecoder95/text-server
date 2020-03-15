@@ -36,4 +36,6 @@ router.delete("/remove-admin", isAuth, manageControllers.removeAdmin);
 
 router.get("/get-all-people", manageControllers.getAllPeople);
 
+router.post("/upload-to-group", isAuth, manageControllers.uploadFileToGroup);
+
 module.exports = router;
