@@ -245,12 +245,12 @@ exports.uploadFileToGroup = async (req, res, next) => {
           );
           if (!personInGroup) {
             person = new Person({ name: contact.name, number: contact.number });
-            // await person.save();
+            await person.save();
             group.people.push(person);
             peopleAdded++;
           }
         }
-        // await group.save()
+        await group.save();
         res
           .status(200)
           .json({ message: "People added successfully!", group, peopleAdded });
