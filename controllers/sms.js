@@ -1,14 +1,16 @@
 const bcrypt = require("bcryptjs");
+const MessagingResponse = require("twilio").twiml.MessagingResponse;
 
 const User = require("../models/User");
 const Group = require("../models/Group");
 const TextHistory = require("../models/TextHistory");
 const Person = require("../models/Person");
 const { sendSms } = require("../util/sms-functions");
-const MessagingResponse = require("twilio").twiml.MessagingResponse;
+const createNonASCII = require("../util/create-non-ascii");
 
 exports.sendGroupSms = async (req, res, next) => {
-  const { password, people, message, groupId } = req.body;
+  const { password, people, groupId } = req.body;
+  const message = createNonASCII(req.body.message);
   try {
     const user = await User.findById(req.userId);
     if (!user) {
@@ -141,7 +143,7 @@ exports.recieveSms = async (req, res, next) => {
       const { people, monthlySms } = group;
       messageArr.shift();
       messageArr.slice(0, 2);
-      message = messageArr.join(" ").trim();
+      message = createNonASCII(messageArr.join(" "));
       // Check to make sure the group has enough texts for this month
       const smsPerMessageCnt = Math.floor(message.length / 160) + 1;
       totalSms += people.length * smsPerMessageCnt;
