@@ -8,6 +8,8 @@ const Person = require("../models/Person");
 const { sendSms } = require("../util/sms-functions");
 const createNonASCII = require("../util/create-non-ascii");
 
+const maxTextCharLength = 153;
+
 exports.sendGroupSms = async (req, res, next) => {
   const { password, people, groupId } = req.body;
   const message = createNonASCII(req.body.message);
@@ -35,7 +37,7 @@ exports.sendGroupSms = async (req, res, next) => {
       throw error;
     }
     // Check to make sure group has enough texts left in current cycle
-    const smsPerMessageCnt = Math.floor(message.length / 160) + 1;
+    const smsPerMessageCnt = Math.floor(message.length / maxTextCharLength) + 1;
     group.monthlySms.count += group.people.length * smsPerMessageCnt;
     await group.save();
     // All clear to send to number list
@@ -145,7 +147,7 @@ exports.recieveSms = async (req, res, next) => {
       messageArr.slice(0, 2);
       message = createNonASCII(messageArr.join(" "));
       // Check to make sure the group has enough texts for this month
-      const smsPerMessageCnt = Math.floor(message.length / 160) + 1;
+      const smsPerMessageCnt = Math.floor(message.length / maxTextCharLength) + 1;
       totalSms += people.length * smsPerMessageCnt;
       if (monthlySms.limit < monthlySms.count + totalSms) {
         const error = new Error(
