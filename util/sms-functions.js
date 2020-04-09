@@ -14,7 +14,7 @@ exports.sendSms = (from, to, msg) =>
 
 exports.getTextHistory = groupNumber => {
 	const date = new Date();
-	date.setMonth(d.getMonth() - 3);
+	date.setMonth(date.getMonth() - 3);
   return new Promise(async (resolve, reject) => {
     try {
       const outboundMsg = await twilio.messages.list({
