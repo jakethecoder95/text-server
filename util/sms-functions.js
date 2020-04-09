@@ -13,15 +13,17 @@ exports.sendSms = (from, to, msg) =>
   });
 
 exports.getTextHistory = groupNumber => {
+	const date = new Date();
+	date.setMonth(d.getMonth() - 3);
   return new Promise(async (resolve, reject) => {
     try {
       const outboundMsg = await twilio.messages.list({
         from: groupNumber,
-        limit: 200
+			  dateSentAfter: date 
       });
       const inboundMsg = await twilio.messages.list({
         to: groupNumber,
-        limit: 50
+				dateSentAfter: date
       });
       resolve([...outboundMsg, ...inboundMsg]);
     } catch (err) {
