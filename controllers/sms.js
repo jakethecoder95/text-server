@@ -30,7 +30,7 @@ exports.sendGroupSms = async (req, res, next) => {
       throw error;
     }
     // Get the group from the db
-    const group = await Group.findById(groupId);
+    const group = await Group.findById(groupId).populate("people");
     if (!group) {
       const error = new Error("No group was found");
       error.statusCode = 401;
@@ -58,9 +58,7 @@ exports.sendGroupSms = async (req, res, next) => {
 
 exports.recieveSms = async (req, res, next) => {
   const { Body, From, To, SID, SmsSid } = req.body,
-    messageArr = Body.trim()
-      .replace("\n", " ")
-      .split(" "),
+    messageArr = Body.trim().replace("\n", " ").split(" "),
     from = From.replace("+", ""),
     date = new Date().toISOString(),
     sentMessageSIDs = [];
@@ -147,7 +145,8 @@ exports.recieveSms = async (req, res, next) => {
       messageArr.slice(0, 2);
       message = createNonASCII(messageArr.join(" "));
       // Check to make sure the group has enough texts for this month
-      const smsPerMessageCnt = Math.floor(message.length / maxTextCharLength) + 1;
+      const smsPerMessageCnt =
+        Math.floor(message.length / maxTextCharLength) + 1;
       totalSms += people.length * smsPerMessageCnt;
       if (monthlySms.limit < monthlySms.count + totalSms) {
         const error = new Error(
