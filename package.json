@@ -4,9 +4,10 @@
   "description": "A rest api to screated for church groups to communicate with their group",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "mocha --timeout 5000",
     "start": "node index.js",
-    "develop": "nodemon index.js"
+    "mongo": "cd ../../../../../../Program Files/MongoDB/Server/3.6/bin && start mongod.exe",
+    "develop": "nodemon"
   },
   "repository": {
     "type": "git",
@@ -34,6 +35,9 @@
     "twilio": "^3.41.1"
   },
   "devDependencies": {
-    "dotenv": "^8.2.0"
+    "chai": "^4.2.0",
+    "dotenv": "^8.2.0",
+    "mocha": "^7.1.1",
+    "sinon": "^9.0.2"
   }
 }
