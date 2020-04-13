@@ -7,6 +7,7 @@ const authRoutes = require("./routes/auth");
 const manageRoutes = require("./routes/manage");
 const groupRoutes = require("./routes/group");
 const smsRoutes = require("./routes/sms");
+const subgroupRoutes = require("./routes/subgroup");
 
 if (process.env.NODE_ENV !== "production") require("dotenv").config();
 
@@ -45,6 +46,8 @@ app.use("/manage", manageRoutes);
 app.use("/group", groupRoutes);
 
 app.use("/sms", smsRoutes);
+
+app.use("/subgroup", subgroupRoutes);
 
 app.use((error, req, res, next) => {
   console.log(error);
