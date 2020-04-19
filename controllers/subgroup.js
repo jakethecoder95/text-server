@@ -3,7 +3,7 @@ const Group = require("../models/Group");
 const Subgroup = require("../models/Subgroup");
 
 // CREATE SUBGROUP
-exports.createSubgroup = async (groupId, peopleIds) => {
+exports.createSubgroup = async (groupId, peopleIds, name) => {
   return new Promise(async (resolve, reject) => {
     try {
       const group = await Group.findById(groupId);
@@ -19,7 +19,7 @@ exports.createSubgroup = async (groupId, peopleIds) => {
           people.push(person);
         }
       }
-      const subgroup = await new Subgroup({ groupId, people });
+      const subgroup = await new Subgroup({ groupId, people, name });
       await subgroup.save();
       resolve(subgroup);
     } catch (error) {
@@ -29,9 +29,9 @@ exports.createSubgroup = async (groupId, peopleIds) => {
 };
 
 exports.putCreateSubgroup = async (req, res, next) => {
-  const { groupId, peopleIds } = req.body;
+  const { groupId, peopleIds, name } = req.body;
   try {
-    const subgroup = await this.createSubgroup(groupId, peopleIds);
+    const subgroup = await this.createSubgroup(groupId, peopleIds, name);
     res.status(200).json({ message: "Subgroup Added", subgroup });
     return;
   } catch (err) {
